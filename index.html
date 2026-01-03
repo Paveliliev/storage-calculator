@@ -84,7 +84,7 @@
 
         function handleThemeClick() {
             const now = Date.now();
-            if (now - lastClick < 400) clickCount++; else clickCount = 1;
+            if (now - lastClick < 800) clickCount++; else clickCount = 1;
             lastClick = now;
             if (clickCount >= 5) { document.body.classList.toggle('matrix-mode'); clickCount = 0; } 
             else { document.body.classList.remove('matrix-mode'); document.body.classList.toggle('dark-mode'); }
@@ -207,3 +207,4 @@ def calc(event):
     </script>
 </body>
 </html>
+
