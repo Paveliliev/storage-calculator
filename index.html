@@ -23,13 +23,12 @@
         button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: opacity 0.2s; }
         button:hover { opacity: 0.8; }
         #calc-btn { flex: 3; padding: 12px; background-color: #007bff; color: white; }
+        #copy-btn { padding: 8px 16px; background-color: #28a745; color: white; margin-top: 10px; width: 100%; display: none; }
         #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
         .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
         .carton-res { border-left-color: #e67e22; }
         .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; }
         .weight-alert { color: #ff4d4d; font-weight: bold; }
-
-        /* Chart Styles */
         .chart-container { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
         .bar-wrapper { margin-bottom: 8px; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
@@ -75,16 +74,18 @@
             <button id="calc-btn" py-click="calc">Analyze Fit</button>
         </div>
         <div id="output-area" style="margin-top: 15px;"></div>
+        <button id="copy-btn" onclick="copyResults()">📋 Copy Zone & Qty</button>
     </div>
 
     <script>
         let clickCount = 0; let lastClick = 0;
+        let copyText = "";
         const fields = ["MAX_L", "MAX_W", "MAX_H", "SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"];
         const factory = { "MAX_L":60,"MAX_W":40,"MAX_H":35,"SH_L":52,"SH_W":32,"SH_H":30,"OC_L":51.5,"OC_W":33.5,"OC_H":34,"CL_L":238,"CL_W":41.5,"CL_H":36 };
 
         function handleThemeClick() {
             const now = Date.now();
-            if (now - lastClick < 800) clickCount++; else clickCount = 1;
+            if (now - lastClick < 900) clickCount++; else clickCount = 1;
             lastClick = now;
             if (clickCount >= 5) { document.body.classList.toggle('matrix-mode'); clickCount = 0; } 
             else { document.body.classList.remove('matrix-mode'); document.body.classList.toggle('dark-mode'); }
@@ -98,7 +99,17 @@
         function resetToFactory() {
             if(confirm("Restore original zone limits?")) {
                 fields.forEach(id => { document.getElementById(id).value = factory[id]; localStorage.setItem(id, factory[id]); });
+                document.getElementById('settings-modal').style.display='none';
             }
+        }
+
+        function copyResults() {
+            navigator.clipboard.writeText(copyText).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const original = btn.innerText;
+                btn.innerText = "✅ Copied!";
+                setTimeout(() => btn.innerText = original, 2000);
+            });
         }
 
         window.onload = () => {
@@ -107,7 +118,7 @@
     </script>
 
     <script type="py">
-from pyscript import document
+from pyscript import document, window
 import math
 
 def get_f(id):
@@ -118,13 +129,18 @@ def reset_inputs(event):
     for i in ["L", "W", "H", "Weight", "CL_item", "CW", "CH", "CWE", "CQ"]:
         document.querySelector(f"#{i}").value = ""
     document.querySelector("#output-area").innerHTML = ""
+    document.querySelector("#copy-btn").style.display = "none"
 
 def calc_zone(l, w, h, weight, zone_key, z_dims):
     L_max, W_min = max(l, w), min(l, w)
     z = z_dims[zone_key]
     weight_limits = {"SH": 50, "OC": 40, "CL": 80}
     
-    qty = math.floor(z['l']/L_max) * math.floor(z['w']/W_min) * math.floor(z['h']/h)
+    # Base physics calc
+    qty_l = math.floor(z['l']/L_max)
+    qty_w = math.floor(z['w']/W_min)
+    qty_h = math.floor(z['h']/h)
+    qty = qty_l * qty_w * qty_h
     if zone_key == "OC": qty *= 2
     
     is_lim = False
@@ -133,78 +149,70 @@ def calc_zone(l, w, h, weight, zone_key, z_dims):
         if max_w < qty:
             qty, is_lim = max_w, True
             
-    util = ((l*w*h*qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
-    return max(0, qty), is_lim, qty * weight, util
+    # Volumetric Efficiency: (Item Vol * Qty) / (Zone Vol)
+    total_zone_vol = z['l'] * z['w'] * z['h']
+    if zone_key == "OC": total_zone_vol *= 2
+    item_vol = l * w * h
+    efficiency = ((item_vol * qty) / total_zone_vol * 100) if total_zone_vol > 0 else 0
+    
+    return max(0, qty), is_lim, efficiency
 
-def format_val(val, is_lim):
-    if is_lim: return f"<span class='weight-alert'>{int(val)}⚖️</span>"
-    return f"<span>{int(val)}</span>"
-
-def make_chart_html(scores, color):
+def make_chart_html(scores, efficiencies, color):
     max_val = max(scores.values()) if any(scores.values()) else 1
     chart_html = '<div class="chart-container">'
     for label, val in scores.items():
         width = (val / max_val * 100) if max_val > 0 else 0
+        eff = efficiencies[label]
         chart_html += f"""
         <div class="bar-wrapper">
-            <div class="bar-label"><span>{label} Rack</span><span>{int(val)} units</span></div>
+            <div class="bar-label">
+                <span>{label} ({int(eff)}% Density)</span>
+                <span>{int(val)}</span>
+            </div>
             <div class="bar-bg"><div class="bar-fill" style="width: {width}%; background: {color};"></div></div>
         </div>"""
-    chart_html += '</div>'
-    return chart_html
+    return chart_html + '</div>'
 
 def calc(event):
     out = document.querySelector("#output-area")
-    z_dims = {
-        "SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")},
-        "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")},
-        "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}
-    }
-    ML, MW, MH = get_f("MAX_L"), get_f("MAX_W"), get_f("MAX_H")
+    z_dims = {"SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")}, "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")}, "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}}
     l, w, h, weight = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwight, cq = get_f("CL_item"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
-
+    
     if not l or not w or not h: return
-    if max(l,w) > ML or min(l,w) > MW or h > MH:
-        out.innerHTML = "<div class='res-block' style='border-color:red;'>🚫 Item exceeds system limits!</div>"
-        return
-
+    
     # Individual Zone Calc
-    sh_p, sh_pl, sh_pw, sh_pu = calc_zone(l, w, h, weight, "SH", z_dims)
-    oc_p, oc_pl, oc_pw, oc_pu = calc_zone(l, w, h, weight, "OC", z_dims)
-    cl_p, cl_pl, cl_pw, cl_pu = calc_zone(l, w, h, weight, "CL", z_dims)
+    sh_p, sh_pl, sh_pe = calc_zone(l, w, h, weight, "SH", z_dims)
+    oc_p, oc_pl, oc_pe = calc_zone(l, w, h, weight, "OC", z_dims)
+    cl_p, cl_pl, cl_pe = calc_zone(l, w, h, weight, "CL", z_dims)
     
     p_score = {"SH": sh_p * 6, "OC": oc_p * 2, "CL": cl_p}
+    p_eff = {"SH": sh_pe, "OC": oc_pe, "CL": cl_pe}
     best_p = max(p_score, key=p_score.get)
 
-    html = f"""<div class="res-block">
-        <strong>Individual Items:</strong><br>
-        SH: {format_val(sh_p, sh_pl)} | OC: {format_val(oc_p, oc_pl)} | CL: {format_val(cl_p, cl_pl)}<br>
-        <small>Best: {best_p} | Util: {sh_pu if best_p=='SH' else oc_pu if best_p=='OC' else cl_pu:.1f}%</small>
-        {make_chart_html(p_score, '#007bff')}
-    </div>"""
+    copy_str = f"Individual Best: {best_p} - {int(p_score[best_p])} units ({int(p_eff[best_p])}% Density)"
+
+    html = f"""<div class="res-block"><strong>Individual Items:</strong><br>
+        SH: {int(sh_p)} | OC: {int(oc_p)} | CL: {int(cl_p)}<br>
+        {make_chart_html(p_score, p_eff, '#007bff')}</div>"""
 
     if cl and cw and ch and cq:
-        sh_c, sh_cl, sh_cw, sh_cu = calc_zone(cl, cw, ch, cwight, "SH", z_dims)
-        oc_c, oc_cl, oc_cw, oc_cu = calc_zone(cl, cw, ch, cwight, "OC", z_dims)
-        cl_c, cl_cl, cl_cw, cl_cu = calc_zone(cl, cw, ch, cwight, "CL", z_dims)
+        sh_c, sh_cl, sh_ce = calc_zone(cl, cw, ch, cwight, "SH", z_dims)
+        oc_c, oc_cl, oc_ce = calc_zone(cl, cw, ch, cwight, "OC", z_dims)
+        cl_c, cl_cl, cl_ce = calc_zone(cl, cw, ch, cwight, "CL", z_dims)
         
         c_score = {"SH": sh_c * cq * 6, "OC": oc_c * cq * 2, "CL": cl_c * cq}
+        c_eff = {"SH": sh_ce, "OC": oc_ce, "CL": cl_ce}
         best_c = max(c_score, key=c_score.get)
         
-        html += f"""<div class="res-block carton-res">
-            <strong style="color:#e67e22;">Carton Storage (Total Units):</strong><br>
-            SH: {format_val(sh_c*cq, sh_cl)} | OC: {format_val(oc_c*cq, oc_cl)} | CL: {format_val(cl_c*cq, cl_cl)}<br>
-            <small>Best: {best_c} | Util: {sh_cu if best_c=='SH' else oc_cu if best_c=='OC' else cl_cu:.1f}%</small>
-            {make_chart_html(c_score, '#e67e22')}
-        </div>"""
-        
-        diff = abs(p_score[best_p] - c_score[best_c])
-        win = "Individual" if p_score[best_p] > c_score[best_c] else "Carton"
-        html += f"<div class='comparison-box'>✨ <b>{win}</b> provides <b>{int(diff)}</b> more total units.</div>"
+        copy_str += f"\nCarton Best: {best_c} - {int(c_score[best_c])} units ({int(c_eff[best_c])}% Density)"
+        html += f"""<div class="res-block carton-res"><strong>Carton Storage:</strong><br>
+            SH: {int(sh_c*cq)} | OC: {int(oc_c*cq)} | CL: {int(cl_c*cq)}<br>
+            {make_chart_html(c_score, c_eff, '#e67e22')}</div>"""
 
+    window.copyText = copy_str
+    document.querySelector("#copy-btn").style.display = "block"
     out.innerHTML = html
     </script>
 </body>
 </html>
-
