@@ -3,112 +3,207 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Storage Zone Optimizer</title>
+    <title>Storage Zone Optimizer Pro</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <style>
+        :root { --bg: #f4f4f9; --card: white; --text: #2c3e50; --border: #ddd; --input-bg: white; --input-text: black; --secondary-bg: rgba(0,0,0,0.05); }
+        body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --border: #333; --input-bg: #2d2d2d; --input-text: #ffffff; --secondary-bg: rgba(255,255,255,0.05); }
+        body.matrix-mode { --bg: #000; --card: #000; --text: #00ff41; --border: #00ff41; --input-bg: #000; --input-text: #00ff41; --secondary-bg: rgba(0,255,65,0.1); }
+        
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 10px; display: flex; justify-content: center; transition: 0.3s; }
+        .card { background: var(--card); padding: 15px 30px 30px 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 100%; max-width: 480px; box-sizing: border-box; }
+        h1 { color: var(--text); margin-bottom: 15px; text-align: center; font-size: 1.4rem; font-weight: 600; }
+        .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
+        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border); overflow-y: auto; max-height: 90vh; }
+        .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--input-text); box-sizing: border-box; outline: none; }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
+        #calc-btn { flex: 3; padding: 12px; background-color: #007bff; color: white; }
+        #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
+        .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
+        .carton-res { border-left-color: #e67e22; }
+        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; }
+        .weight-alert { color: #ff4d4d; font-weight: bold; }
+
+        /* Chart Styles */
+        .chart-container { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+        .bar-wrapper { margin-bottom: 8px; }
+        .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.5s ease-out; }
+    </style>
 </head>
-<body style="background-color: #f4f4f9; font-family: 'Segoe UI', sans-serif; padding: 20px;">
+<body id="body" class="dark-mode">
 
-    <section style="text-align: center;">
-        <div style="background: white; display: inline-block; padding: 30px; border-radius: 15px; border: 1px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px;">
-            <h1 style="color: #2c3e50; margin-bottom: 5px;">Storage Zone Optimizer</h1>
-            
-            <div style="margin-bottom: 20px; font-size: 0.8em; color: #555; background: #fff9e6; padding: 10px; border-radius: 8px; border: 1px dashed #f39c12;">
-                <strong>Max Storage Capacity (LxWxH):</strong><br>
-                Limit: 60 x 40 x 35
-            </div>
+    <div style="position: fixed; top: 10px; left: 10px; display: flex; gap: 5px; z-index: 50;">
+        <button onclick="document.getElementById('settings-modal').style.display='block'" style="padding: 8px 12px; background: #333; color: white; border-radius: 5px;">⚙️</button>
+        <button id="theme-toggle" onclick="handleThemeClick()" style="padding: 8px 12px; background: #333; color: white; border-radius: 5px;">🌓</button>
+    </div>
 
-            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                <input type="number" id="L" placeholder="Length" style="width: 80px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"/>
-                <input type="number" id="W" placeholder="Width" style="width: 80px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"/>
-                <input type="number" id="H" placeholder="Height" style="width: 80px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"/>
-            </div>
-
-            <button id="calc-btn" py-click="calc" style="width: 100%; padding: 12px; background-color: #2c3e50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em;">
-                Analyze Storage Fit
-            </button>
-
-            <div id="output-area" style="margin-top: 25px; text-align: left; min-height: 50px;"></div>
+    <div id="settings-modal" class="settings-overlay">
+        <div class="settings-menu">
+            <h3>Zone Limits</h3>
+            <div style="margin-bottom:10px;"><label>SYSTEM MAX</label><div class="grid-3"><input type="number" id="MAX_L" value="60"><input type="number" id="MAX_W" value="40"><input type="number" id="MAX_H" value="35"></div></div>
+            <div style="margin-bottom:10px;"><label>SH (Shelving) - 50kg</label><div class="grid-3"><input type="number" id="SH_L" value="52"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
+            <div style="margin-bottom:10px;"><label>OC (Conveyor) - 40kg</label><div class="grid-3"><input type="number" id="OC_L" value="51.5"><input type="number" id="OC_W" value="33.5"><input type="number" id="OC_H" value="34"></div></div>
+            <div style="margin-bottom:10px;"><label>CL (Carton Live) - 80kg</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
+            <button onclick="saveAndClose()" style="width:100%; padding:10px; background:#28a745; color:white; margin-bottom:5px; border-radius:5px;">Save Defaults</button>
+            <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">Reset Factory</button>
         </div>
-    </section>
+    </div>
+
+    <div class="card">
+        <h1>Storage Optimizer</h1>
+        <div class="input-section">
+            <label class="input-label">Item Dimensions & Weight:</label>
+            <div class="grid-3"><input type="number" id="L" placeholder="L"><input type="number" id="W" placeholder="W"><input type="number" id="H" placeholder="H"></div>
+            <input type="number" id="Weight" placeholder="Unit Weight (kg)" style="margin-top:8px;">
+        </div>
+        <div style="background: var(--secondary-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
+            <label class="input-label">Carton Configuration:</label>
+            <div class="grid-3"><input type="number" id="CL_item" placeholder="CL"><input type="number" id="CW" placeholder="CW"><input type="number" id="CH" placeholder="CH"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                <input type="number" id="CWE" placeholder="Box kg"><input type="number" id="CQ" placeholder="Items/Box">
+            </div>
+        </div>
+        <div class="btn-row">
+            <button id="reset-btn" py-click="reset_inputs">Reset</button>
+            <button id="calc-btn" py-click="calc">Analyze Fit</button>
+        </div>
+        <div id="output-area" style="margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        let clickCount = 0; let lastClick = 0;
+        const fields = ["MAX_L", "MAX_W", "MAX_H", "SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"];
+        const factory = { "MAX_L":60,"MAX_W":40,"MAX_H":35,"SH_L":52,"SH_W":32,"SH_H":30,"OC_L":51.5,"OC_W":33.5,"OC_H":34,"CL_L":238,"CL_W":41.5,"CL_H":36 };
+
+        function handleThemeClick() {
+            const now = Date.now();
+            if (now - lastClick < 400) clickCount++; else clickCount = 1;
+            lastClick = now;
+            if (clickCount >= 5) { document.body.classList.toggle('matrix-mode'); clickCount = 0; } 
+            else { document.body.classList.remove('matrix-mode'); document.body.classList.toggle('dark-mode'); }
+        }
+
+        function saveAndClose() {
+            fields.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
+            document.getElementById('settings-modal').style.display='none';
+        }
+
+        function resetToFactory() {
+            if(confirm("Restore original zone limits?")) {
+                fields.forEach(id => { document.getElementById(id).value = factory[id]; localStorage.setItem(id, factory[id]); });
+            }
+        }
+
+        window.onload = () => {
+            fields.forEach(id => { if(localStorage.getItem(id)) document.getElementById(id).value = localStorage.getItem(id); });
+        };
+    </script>
 
     <script type="py">
 from pyscript import document
 import math
 
+def get_f(id):
+    val = document.querySelector(f"#{id}").value
+    return float(val) if val else 0.0
+
+def reset_inputs(event):
+    for i in ["L", "W", "H", "Weight", "CL_item", "CW", "CH", "CWE", "CQ"]:
+        document.querySelector(f"#{i}").value = ""
+    document.querySelector("#output-area").innerHTML = ""
+
+def calc_zone(l, w, h, weight, zone_key, z_dims):
+    L_max, W_min = max(l, w), min(l, w)
+    z = z_dims[zone_key]
+    weight_limits = {"SH": 50, "OC": 40, "CL": 80}
+    
+    qty = math.floor(z['l']/L_max) * math.floor(z['w']/W_min) * math.floor(z['h']/h)
+    if zone_key == "OC": qty *= 2
+    
+    is_lim = False
+    if weight > 0:
+        max_w = math.floor(weight_limits[zone_key] / weight)
+        if max_w < qty:
+            qty, is_lim = max_w, True
+            
+    util = ((l*w*h*qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
+    return max(0, qty), is_lim, qty * weight, util
+
+def format_val(val, is_lim):
+    if is_lim: return f"<span class='weight-alert'>{int(val)}⚖️</span>"
+    return f"<span>{int(val)}</span>"
+
+def make_chart_html(scores, color):
+    max_val = max(scores.values()) if any(scores.values()) else 1
+    chart_html = '<div class="chart-container">'
+    for label, val in scores.items():
+        width = (val / max_val * 100) if max_val > 0 else 0
+        chart_html += f"""
+        <div class="bar-wrapper">
+            <div class="bar-label"><span>{label} Rack</span><span>{int(val)} units</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width: {width}%; background: {color};"></div></div>
+        </div>"""
+    chart_html += '</div>'
+    return chart_html
+
 def calc(event):
-    output_div = document.querySelector("#output-area")
-    val_l = document.querySelector("#L").value
-    val_w = document.querySelector("#W").value
-    val_h = document.querySelector("#H").value
+    out = document.querySelector("#output-area")
+    z_dims = {
+        "SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")},
+        "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")},
+        "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}
+    }
+    ML, MW, MH = get_f("MAX_L"), get_f("MAX_W"), get_f("MAX_H")
+    l, w, h, weight = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
+    cl, cw, ch, cwight, cq = get_f("CL_item"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
 
-    output_div.innerHTML = ""
-
-    if not val_l or not val_w or not val_h:
-        output_div.innerHTML = "<div style='color: #c0392b; background: #fceae9; padding: 10px; border-radius: 5px; border: 1px solid #e74c3c;'><strong>⚠️ Missing Data:</strong> Please enter dimensions!</div>"
+    if not l or not w or not h: return
+    if max(l,w) > ML or min(l,w) > MW or h > MH:
+        out.innerHTML = "<div class='res-block' style='border-color:red;'>🚫 Item exceeds system limits!</div>"
         return
 
-    try:
-        L = max(float(val_l), float(val_w))
-        W = min(float(val_l), float(val_w))
-        H = float(val_h)
+    # Individual Zone Calc
+    sh_p, sh_pl, sh_pw, sh_pu = calc_zone(l, w, h, weight, "SH", z_dims)
+    oc_p, oc_pl, oc_pw, oc_pu = calc_zone(l, w, h, weight, "OC", z_dims)
+    cl_p, cl_pl, cl_pw, cl_pu = calc_zone(l, w, h, weight, "CL", z_dims)
+    
+    p_score = {"SH": sh_p * 6, "OC": oc_p * 2, "CL": cl_p}
+    best_p = max(p_score, key=p_score.get)
 
-        if L > 60 or W > 40 or H > 35:
-            output_div.innerHTML = "<div style='color: #c0392b; background: #fceae9; padding: 10px; border-radius: 5px; border: 1px solid #e74c3c;'><strong>🚫 Cannot Store:</strong> Material exceeds 60x40x35 limit.</div>"
-            return
+    html = f"""<div class="res-block">
+        <strong>Individual Items:</strong><br>
+        SH: {format_val(sh_p, sh_pl)} | OC: {format_val(oc_p, oc_pl)} | CL: {format_val(cl_p, cl_pl)}<br>
+        <small>Best: {best_p} | Util: {sh_pu if best_p=='SH' else oc_pu if best_p=='OC' else cl_pu:.1f}%</small>
+        {make_chart_html(p_score, '#007bff')}
+    </div>"""
 
-        # 1. Standard Bin Dimensions
-        bins = {
-            "SH": {"l": 52, "w": 32, "h": 30},
-            "OC": {"l": 51.5, "w": 33.5, "h": 34},
-            "CL": {"l": 238, "w": 41.5, "h": 36}
-        }
-
-        # 2. Raw Calculations
-        res_sh = math.floor(bins["SH"]["l"]/L) * math.floor(bins["SH"]["w"]/W) * math.floor(bins["SH"]["h"]/H)
-        res_oc = math.floor(bins["OC"]["l"]/L) * math.floor(bins["OC"]["w"]/W) * math.floor(bins["OC"]["h"]/H) * 2
-        res_cl = math.floor(bins["CL"]["l"]/L) * math.floor(bins["CL"]["w"]/W) * math.floor(bins["CL"]["h"]/H)
-
-        # 3. Weighted Comparison
-        comparison = {"SH": res_sh * 6, "CL": res_cl, "OC": res_oc * 2}
-        ideal_zone = max(comparison, key=comparison.get)
+    if cl and cw and ch and cq:
+        sh_c, sh_cl, sh_cw, sh_cu = calc_zone(cl, cw, ch, cwight, "SH", z_dims)
+        oc_c, oc_cl, oc_cw, oc_cu = calc_zone(cl, cw, ch, cwight, "OC", z_dims)
+        cl_c, cl_cl, cl_cw, cl_cu = calc_zone(cl, cw, ch, cwight, "CL", z_dims)
         
-        raw_map = {"SH": res_sh, "CL": res_cl, "OC": res_oc}
-        ideal_qty = raw_map[ideal_zone]
-
-        # 4. Volume Utilization %
-        # Formula: (Total Item Volume / Total Bin Volume) * 100
-        item_vol = (L * W * H) * ideal_qty
-        bin_dims = bins[ideal_zone]
-        bin_vol = bin_dims["l"] * bin_dims["w"] * bin_dims["h"]
-        # Adjusted for OC double-bin logic if necessary
-        if ideal_zone == "OC": bin_vol *= 2 
+        c_score = {"SH": sh_c * cq * 6, "OC": oc_c * cq * 2, "CL": cl_c * cq}
+        best_c = max(c_score, key=c_score.get)
         
-        utilization = (item_vol / bin_vol) * 100
+        html += f"""<div class="res-block carton-res">
+            <strong style="color:#e67e22;">Carton Storage (Total Units):</strong><br>
+            SH: {format_val(sh_c*cq, sh_cl)} | OC: {format_val(oc_c*cq, oc_cl)} | CL: {format_val(cl_c*cq, cl_cl)}<br>
+            <small>Best: {best_c} | Util: {sh_cu if best_c=='SH' else oc_cu if best_c=='OC' else cl_cu:.1f}%</small>
+            {make_chart_html(c_score, '#e67e22')}
+        </div>"""
+        
+        diff = abs(p_score[best_p] - c_score[best_c])
+        win = "Individual" if p_score[best_p] > c_score[best_c] else "Carton"
+        html += f"<div class='comparison-box'>✨ <b>{win}</b> provides <b>{int(diff)}</b> more total units.</div>"
 
-        html_report = f"""
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2c3e50;">
-                <p style="margin: 5px 0;"> SH Capacity: <strong>{res_sh}</strong></p>
-                <p style="margin: 5px 0;"> OC Capacity: <strong>{res_oc}</strong></p>
-                <p style="margin: 5px 0;"> CL Capacity: <strong>{res_cl}</strong></p>
-            </div>
-            <div style="margin-top: 15px; padding: 15px; background-color: #eafaf1; border-radius: 8px; border: 1px solid #27ae60;">
-                <div style="color: #27ae60; font-weight: bold; font-size: 1.1em; margin-bottom: 5px;">
-                    ✅ IDEAL ZONE: {ideal_zone} ({ideal_qty} units)
-                </div>
-                <div style="font-size: 0.9em; color: #2c3e50;">
-                    Volume Utilization: <strong>{utilization:.1f}%</strong>
-                </div>
-                <div style="width: 100%; background: #ddd; height: 8px; border-radius: 4px; margin-top: 8px;">
-                    <div style="width: {min(utilization, 100):.1f}%; background: #27ae60; height: 100%; border-radius: 4px;"></div>
-                </div>
-            </div>
-        """
-        output_div.innerHTML = html_report
-
-    except Exception as e:
-        output_div.innerHTML = f"<div style='color: #c0392b;'><strong>System Error:</strong> {str(e)}</div>"
+    out.innerHTML = html
     </script>
-
 </body>
 </html>
