@@ -27,12 +27,11 @@
         #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
         .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
         .carton-res { border-left-color: #e67e22; }
+        .alert-block { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; }
         .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; font-weight: bold; }
-        .chart-container { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
         .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; transition: width 0.5s ease-out; }
-        .bottleneck { font-size: 0.7em; color: #ffa500; font-style: italic; display: block; margin-top: 1px;}
     </style>
 </head>
 <body id="body" class="dark-mode">
@@ -54,17 +53,17 @@
 
     <div class="card">
         <h1>Storage Optimizer</h1>
-        <div class="input-section">
-            <label class="input-label">Item Dimensions & Weight:</label>
+        <div>
+            <label class="input-label">Each (L/W/H/kg):</label>
             <div class="grid-3"><input type="number" id="L" placeholder="L"><input type="number" id="W" placeholder="W"><input type="number" id="H" placeholder="H"></div>
-            <input type="number" id="Weight" placeholder="Unit Weight (kg)" style="margin-top:8px;">
+            <input type="number" id="Weight" placeholder="Each kg" style="margin-top:8px;">
         </div>
 
         <div style="background: var(--secondary-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-top: 15px;">
-            <label class="input-label">Carton Configuration:</label>
+            <label class="input-label">Carton (L/W/H/kg/Qty):</label>
             <div class="grid-3"><input type="number" id="CL_c" placeholder="CL"><input type="number" id="CW" placeholder="CW"><input type="number" id="CH" placeholder="CH"></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
-                <input type="number" id="CWE" placeholder="Box kg"><input type="number" id="CQ" placeholder="Qty/Box">
+                <input type="number" id="CWE" placeholder="Box kg"><input type="number" id="CQ" placeholder="Qty">
             </div>
         </div>
 
@@ -73,7 +72,7 @@
             <button id="calc-btn" py-click="calc">Analyze Fit</button>
         </div>
         <div id="output-area" style="margin-top: 15px;"></div>
-        <button id="copy-btn" onclick="copyResults()">📋 Copy Zone & Qty</button>
+        <button id="copy-btn" onclick="copyResults()">📋 Copy Summary</button>
     </div>
 
     <script>
@@ -93,7 +92,7 @@
             navigator.clipboard.writeText(copyText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.innerText = "✅ Copied!";
-                setTimeout(() => btn.innerText = "📋 Copy Zone & Qty", 2000);
+                setTimeout(() => btn.innerText = "📋 Copy Summary", 2000);
             });
         }
         window.onload = () => {
@@ -120,84 +119,68 @@ def reset_inputs(event):
 def calc_best_fit(l, w, h, weight, zone_key, z_dims):
     z = z_dims[zone_key]
     weight_limits = {"SH": 50, "OC": 40, "CL": 80}
-    
-    # Best footprint (Rotation logic)
     qty1 = (math.floor(z['l']/l) * math.floor(z['w']/w))
     qty2 = (math.floor(z['l']/w) * math.floor(z['w']/l))
     footprint = max(qty1, qty2)
-    
     layers = math.floor(z['h']/h)
     qty = footprint * layers
     if zone_key == "OC": qty *= 2
-    
-    # Weight check
-    is_lim = False
     if weight > 0:
-        max_w = math.floor(weight_limits[zone_key] / weight)
-        if max_w < qty:
-            qty, is_lim = max_w, True
-            
+        mw = math.floor(weight_limits[zone_key] / weight)
+        if mw < qty: qty = mw
     eff = (((l*w*h) * qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
-    bn = "Space" if not is_lim else "Weight"
-    if layers < 1: bn = "Height"
-    elif footprint < 1: bn = "Footprint"
-    
-    return max(0, qty), eff, bn
+    return max(0, qty), eff
 
 def calc(event):
     out = document.querySelector("#output-area")
-    z_dims = {
-        "SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")},
-        "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")},
-        "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}
-    }
+    z_dims = {"SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")}, "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")}, "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}}
     l, w, h, wt = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwt, cq = get_f("CL_c"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
-
     if not (l and w and h): return
+
+    html = ""
+    # VALIDATION LOGIC
+    if cl and cw and ch and cq:
+        each_vol = l * w * h
+        cart_vol_per_unit = (cl * cw * ch) / cq
+        vol_ratio = (cart_vol_per_unit / each_vol) * 100 if each_vol > 0 else 0
+        
+        if vol_ratio < 70 or vol_ratio > 130:
+            html += f'<div class="alert-block">⚠️ <b>Dimension Error:</b> Carton/Each volume ratio is {int(vol_ratio)}%. Check measurements.</div>'
+        
+        if cwt and wt:
+            weight_per_unit = cwt / cq
+            if weight_per_unit < wt:
+                html += f'<div class="alert-block">⚠️ <b>Weight Error:</b> Carton unit weight ({weight_per_unit:.2f}kg) is less than Each weight ({wt}kg).</div>'
 
     # Individual Analysis
     indiv_res = {}
-    html = '<div class="res-block"><strong>Individual Items:</strong>'
+    html += '<div class="res-block"><strong>Individual Items:</strong>'
     for zk in ["SH", "OC", "CL"]:
-        q, e, bn = calc_best_fit(l, w, h, wt, zk, z_dims)
-        # Store weighted totals for comparison
-        indiv_res[zk] = {"q": q, "total": q * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e, "bn": bn}
-
-    max_q_i = max([r['q'] for r in indiv_res.values()] + [1])
-    for zk, r in indiv_res.items():
-        w_pct = (r['q'] / max_q_i * 100)
-        html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(r["e"])}%)</span><span>{int(r["q"])}</span></div>'
-        html += f'<div class="bar-bg"><div class="bar-fill" style="width:{w_pct}%; background:#007bff;"></div></div>'
+        q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
+        indiv_res[zk] = {"q": q, "total": q * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e}
+        w_pct = (q / max(1, q)) * 100 # Simplified for visual
+        html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(e)}%)</span><span>{int(q)}</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
     html += '</div>'
 
-    # Carton Analysis
-    carton_best_total = 0
     if cl and cw and ch and cq:
         carton_res = {}
         html += '<div class="res-block carton-res"><strong>Carton Storage (Total Units):</strong>'
         for zk in ["SH", "OC", "CL"]:
-            q_boxes, e, bn = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
+            q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
             total_u = q_boxes * cq
-            carton_res[zk] = {"q": total_u, "total": total_u * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e, "bn": bn}
-        
-        max_q_c = max([r['q'] for r in carton_res.values()] + [1])
-        for zk, r in carton_res.items():
-            w_pct = (r['q'] / max_q_c * 100)
-            html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(r["e"])}%)</span><span>{int(r["q"])}</span></div>'
-            html += f'<div class="bar-bg"><div class="bar-fill" style="width:{w_pct}%; background:#e67e22;"></div></div>'
+            carton_res[zk] = {"q": total_u, "total": total_u * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e}
+            html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(e)}%)</span><span>{int(total_u)}</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
         html += '</div>'
         
-        # Compare Best Totals
-        best_indiv = max([r['total'] for r in indiv_res.values()])
-        best_carton = max([r['total'] for r in carton_res.values()])
-        win = "Individual" if best_indiv > best_carton else "Carton"
-        diff = abs(best_indiv - best_carton)
-        html += f'<div class="comparison-box">✨ {win} is better by {int(diff)} total units across rack!</div>'
+        best_i = max([r['total'] for r in indiv_res.values()])
+        best_c = max([r['total'] for r in carton_res.values()])
+        win = "Individual" if best_i > best_c else "Carton"
+        html += f'<div class="comparison-box">✨ {win} storage maximizes the rack.</div>'
 
     out.innerHTML = html
     document.querySelector("#copy-btn").style.display = "block"
-    window.copyText = f"Analysis Complete. Best Mode: {win if 'win' in locals() else 'Individual'}"
+    window.copyText = f"Optimizer Complete. Preferred: {win if 'win' in locals() else 'Individual'}"
     </script>
 </body>
 </html>
