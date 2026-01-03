@@ -14,40 +14,39 @@
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 10px; display: flex; justify-content: center; transition: 0.3s; }
         .card { background: var(--card); padding: 15px 30px 30px 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 100%; max-width: 480px; box-sizing: border-box; }
         h1 { color: var(--text); margin-bottom: 15px; text-align: center; font-size: 1.4rem; font-weight: 600; }
-        .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; }
-        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border); overflow-y: auto; max-height: 90vh; }
+        .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
+        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border); }
         .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--input-text); box-sizing: border-box; outline: none; }
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
-        button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: opacity 0.2s; }
+        button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: 0.2s; }
         button:hover { opacity: 0.8; }
         #calc-btn { flex: 3; padding: 12px; background-color: #007bff; color: white; }
-        #copy-btn { padding: 8px 16px; background-color: #28a745; color: white; margin-top: 10px; width: 100%; display: none; }
+        #copy-btn { padding: 12px; background-color: #28a745; color: white; margin-top: 10px; width: 100%; display: none; }
         #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
         .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
-        .carton-res { border-left-color: #e67e22; }
         .alert-block { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; }
-        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; font-weight: bold; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
-        .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; }
+        .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;}
         .bar-fill { height: 100%; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body id="body" class="dark-mode">
 
     <div style="position: fixed; top: 10px; left: 10px; display: flex; gap: 5px; z-index: 50;">
-        <button onclick="document.getElementById('settings-modal').style.display='block'" style="padding: 8px 12px; background: #333; color: white; border-radius: 5px;">⚙️</button>
-        <button id="theme-toggle" onclick="handleThemeClick()" style="padding: 8px 12px; background: #333; color: white; border-radius: 5px;">🌓</button>
+        <button onclick="document.getElementById('settings-modal').style.display='block'" style="padding: 10px; background: #333; color: white; border-radius: 5px;">⚙️ Settings</button>
     </div>
 
     <div id="settings-modal" class="settings-overlay">
         <div class="settings-menu">
+            <button onclick="saveAndClose()" style="width:100%; padding:12px; background:#28a745; color:white; border-radius:5px; margin-bottom:15px;">✅ Save & Close</button>
             <h3>Zone Limits</h3>
-            <div style="margin-bottom:10px;"><label>SH (Shelving)</label><div class="grid-3"><input type="number" id="SH_L" value="52"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
+            <div style="margin-bottom:10px;"><label>SH (Shelving)</label><div class="grid-3"><input type="number" id="SH_L" value="55"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
             <div style="margin-bottom:10px;"><label>OC (Conveyor)</label><div class="grid-3"><input type="number" id="OC_L" value="51.5"><input type="number" id="OC_W" value="33.5"><input type="number" id="OC_H" value="34"></div></div>
-            <div style="margin-bottom:10px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
-            <button onclick="saveAndClose()" style="width:100%; padding:10px; background:#28a745; color:white; border-radius:5px;">Save & Close</button>
+            <div style="margin-bottom:20px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
+            <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">⚠️ Reset to Factory Defaults</button>
         </div>
     </div>
 
@@ -72,31 +71,40 @@
             <button id="calc-btn" py-click="calc">Analyze Fit</button>
         </div>
         <div id="output-area" style="margin-top: 15px;"></div>
-        <button id="copy-btn" onclick="copyResults()">📋 Copy Summary</button>
+        <button id="copy-btn" onclick="copyResults()">📋 Copy Zone & Qty</button>
     </div>
 
     <script>
-        let lastClick = 0; let clickCount = 0; let copyText = "";
-        function handleThemeClick() {
-            const now = Date.now();
-            if (now - lastClick < 900) clickCount++; else clickCount = 1;
-            lastClick = now;
-            if (clickCount >= 5) { document.body.classList.toggle('matrix-mode'); clickCount = 0; } 
-            else { document.body.classList.remove('matrix-mode'); document.body.classList.toggle('dark-mode'); }
-        }
+        const fields = ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"];
+        const factory = { "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36 };
+        let copyText = "";
+
         function saveAndClose() {
-            ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"].forEach(id => localStorage.setItem(id, document.getElementById(id).value));
+            fields.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
             document.getElementById('settings-modal').style.display='none';
         }
+
+        function resetToFactory() {
+            if(confirm("Restore original zone limits? This will overwrite your current settings.")) {
+                fields.forEach(id => { 
+                    document.getElementById(id).value = factory[id]; 
+                    localStorage.setItem(id, factory[id]); 
+                });
+                document.getElementById('settings-modal').style.display='none';
+                alert("Defaults restored.");
+            }
+        }
+
         function copyResults() {
             navigator.clipboard.writeText(copyText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.innerText = "✅ Copied!";
-                setTimeout(() => btn.innerText = "📋 Copy Summary", 2000);
+                setTimeout(() => btn.innerText = "📋 Copy Zone & Qty", 2000);
             });
         }
+
         window.onload = () => {
-            ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"].forEach(id => {
+            fields.forEach(id => {
                 if(localStorage.getItem(id)) document.getElementById(id).value = localStorage.getItem(id);
             });
         };
@@ -139,48 +147,27 @@ def calc(event):
     if not (l and w and h): return
 
     html = ""
-    # VALIDATION LOGIC
+    # Data Validation
     if cl and cw and ch and cq:
         each_vol = l * w * h
         cart_vol_per_unit = (cl * cw * ch) / cq
-        vol_ratio = (cart_vol_per_unit / each_vol) * 100 if each_vol > 0 else 0
-        
-        if vol_ratio < 70 or vol_ratio > 130:
-            html += f'<div class="alert-block">⚠️ <b>Dimension Error:</b> Carton/Each volume ratio is {int(vol_ratio)}%. Check measurements.</div>'
-        
-        if cwt and wt:
-            weight_per_unit = cwt / cq
-            if weight_per_unit < wt:
-                html += f'<div class="alert-block">⚠️ <b>Weight Error:</b> Carton unit weight ({weight_per_unit:.2f}kg) is less than Each weight ({wt}kg).</div>'
+        ratio = (cart_vol_per_unit / each_vol) * 100 if each_vol > 0 else 0
+        if ratio < 70 or ratio > 130:
+            html += f'<div class="alert-block">⚠️ <b>Dimension Check:</b> Carton volume is {int(ratio)}% of unit volume.</div>'
 
-    # Individual Analysis
-    indiv_res = {}
-    html += '<div class="res-block"><strong>Individual Items:</strong>'
+    # Analysis
+    res = {}
+    html += '<div class="res-block"><strong>Best Fit Results:</strong>'
     for zk in ["SH", "OC", "CL"]:
         q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
-        indiv_res[zk] = {"q": q, "total": q * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e}
-        w_pct = (q / max(1, q)) * 100 # Simplified for visual
-        html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(e)}%)</span><span>{int(q)}</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+        res[zk] = q
+        html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)}</span></div>'
+        html += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
     html += '</div>'
 
-    if cl and cw and ch and cq:
-        carton_res = {}
-        html += '<div class="res-block carton-res"><strong>Carton Storage (Total Units):</strong>'
-        for zk in ["SH", "OC", "CL"]:
-            q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
-            total_u = q_boxes * cq
-            carton_res[zk] = {"q": total_u, "total": total_u * (6 if zk=="SH" else 2 if zk=="OC" else 1), "e": e}
-            html += f'<div class="bar-label" style="margin-top:5px;"><span>{zk} ({int(e)}%)</span><span>{int(total_u)}</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
-        html += '</div>'
-        
-        best_i = max([r['total'] for r in indiv_res.values()])
-        best_c = max([r['total'] for r in carton_res.values()])
-        win = "Individual" if best_i > best_c else "Carton"
-        html += f'<div class="comparison-box">✨ {win} storage maximizes the rack.</div>'
-
-    out.innerHTML = html
+    window.copyText = f"SH: {int(res['SH'])} | OC: {int(res['OC'])} | CL: {int(res['CL'])}"
     document.querySelector("#copy-btn").style.display = "block"
-    window.copyText = f"Optimizer Complete. Preferred: {win if 'win' in locals() else 'Individual'}"
+    out.innerHTML = html
     </script>
 </body>
 </html>
