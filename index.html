@@ -12,14 +12,15 @@
         body.matrix-mode { --bg: #000; --card: #000; --text: #00ff41; --border: #00ff41; --input-bg: #000; --input-text: #00ff41; --secondary-bg: rgba(0,255,65,0.1); }
         
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 10px; display: flex; justify-content: center; transition: 0.3s; margin: 0; min-height: 100vh; }
-        .card { background: var(--card); padding: 15px 30px 30px 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 100%; max-width: 480px; box-sizing: border-box; align-self: center; }
+        .card { background: var(--card); padding: 15px 30px 30px 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 100%; max-width: 520px; box-sizing: border-box; align-self: center; }
         h1 { color: var(--text); margin-bottom: 15px; text-align: center; font-size: 1.4rem; font-weight: 600; }
         
         .top-nav { position: fixed; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 50; }
         .nav-btn { padding: 10px; background: #333; color: white; border-radius: 8px; border: 1px solid #444; font-size: 0.9rem; cursor: pointer; }
         
-        .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
-        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); }
+        /* Settings Overlay - Clickable Backdrop */
+        .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; cursor: pointer; }
+        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); cursor: default; }
         
         .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -32,10 +33,11 @@
         #copy-btn { padding: 12px; background-color: #28a745; color: white; margin-top: 15px; width: 100%; display: none; }
         #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
         
-        .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
+        .res-container { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+        .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
         .carton-res { border-left-color: #e67e22; }
         .alert-block { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; }
-        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; font-weight: bold; }
+        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.9em; text-align: center; font-weight: bold; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
         .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;}
         .bar-fill { height: 100%; transition: width 0.5s ease-out; }
@@ -48,15 +50,15 @@
         <button id="theme-toggle" class="nav-btn" onclick="handleThemeClick()">🌓 Mode</button>
     </div>
 
-    <div id="settings-modal" class="settings-overlay">
-        <div class="settings-menu">
+    <div id="settings-modal" class="settings-overlay" onclick="saveAndClose()">
+        <div class="settings-menu" onclick="event.stopPropagation()">
             <button onclick="saveAndClose()" style="width:100%; padding:12px; background:#28a745; color:white; border-radius:5px; margin-bottom:15px;">✅ Save & Close</button>
             <h3>Zone Limits</h3>
             <div style="margin-bottom:10px;"><label>SH (Shelving)</label><div class="grid-3"><input type="number" id="SH_L" value="55"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
             <div style="margin-bottom:10px;"><label>OC (Conveyor)</label><div class="grid-3"><input type="number" id="OC_L" value="51.5"><input type="number" id="OC_W" value="33.5"><input type="number" id="OC_H" value="34"></div></div>
             <div style="margin-bottom:20px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
             <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
-            <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">⚠️ Reset to Factory Defaults</button>
+            <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">⚠️ Reset Factory</button>
         </div>
     </div>
 
@@ -72,7 +74,7 @@
             <label class="input-label">Carton (L/W/H/kg/Qty):</label>
             <div class="grid-3"><input type="number" id="CL_c" placeholder="CL"><input type="number" id="CW" placeholder="CW"><input type="number" id="CH" placeholder="CH"></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
-                <input type="number" id="CWE" placeholder="Box kg"><input type="number" id="CQ" placeholder="Qty">
+                <input type="number" id="CWE" placeholder="Box kg"><input type="number" id="CQ" placeholder="Items/Box">
             </div>
         </div>
 
@@ -80,8 +82,8 @@
             <button id="reset-btn" py-click="reset_inputs">Reset</button>
             <button id="calc-btn" py-click="calc">Analyze Fit</button>
         </div>
-        <div id="output-area" style="margin-top: 15px;"></div>
-        <button id="copy-btn" onclick="copyResults()">📋 Copy Zone & Qty</button>
+        <div id="output-area"></div>
+        <button id="copy-btn" onclick="copyResults()">📋 Copy Results</button>
     </div>
 
     <script>
@@ -103,7 +105,7 @@
         }
 
         function resetToFactory() {
-            if(confirm("Restore original zone limits?")) {
+            if(confirm("Restore defaults?")) {
                 fields.forEach(id => { document.getElementById(id).value = factory[id]; localStorage.setItem(id, factory[id]); });
                 document.getElementById('settings-modal').style.display='none';
             }
@@ -113,7 +115,7 @@
             navigator.clipboard.writeText(copyText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.innerText = "✅ Copied!";
-                setTimeout(() => btn.innerText = "📋 Copy Zone & Qty", 2000);
+                setTimeout(() => btn.innerText = "📋 Copy Results", 2000);
             });
         }
 
@@ -151,54 +153,62 @@ def calc_best_fit(l, w, h, weight, zone_key, z_dims):
         mw = math.floor(weight_limits[zone_key] / weight)
         if mw < qty: qty = mw
     
+    # Efficiency Formula: $$\frac{(l \times w \times h) \times qty}{Volume_{Zone}} \times 100$$
     eff = (((l*w*h) * qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
     return max(0, qty), eff
 
 def calc(event):
     out = document.querySelector("#output-area")
     z_dims = {"SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")}, "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")}, "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}}
+    
     l, w, h, wt = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwt, cq = get_f("CL_c"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
+    
     if not (l and w and h): return
 
-    html = ""
-    # Validity Check
+    html_content = ""
+    
+    # 1. Validation Alert
     if cl and cw and ch and cq:
-        ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*w*h) > 0 else 0
+        unit_vol = l * w * h
+        cart_vol_per_item = (cl * cw * ch) / cq
+        ratio = (cart_vol_per_item / unit_vol) * 100 if unit_vol > 0 else 0
         if ratio < 70 or ratio > 130:
-            html += f'<div class="alert-block">⚠️ <b>Dimension Mismatch:</b> Carton volume is {int(ratio)}% of the units inside. Check entries.</div>'
+            html_content += f'<div class="alert-block">⚠️ <b>Volume Check:</b> Carton is {int(ratio)}% of the unit volume. Possible error in dims or qty.</div>'
 
-    # Individual Calculation
-    indiv_totals = {}
-    html += '<div class="res-block"><strong>📦 Individual Items:</strong>'
+    # 2. Individual Calculations Block
+    indiv_block = '<div class="res-block"><strong>📊 Individual Items:</strong>'
+    best_indiv_total = 0
     for zk in ["SH", "OC", "CL"]:
         q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
-        indiv_totals[zk] = q * (6 if zk=="SH" else 2 if zk=="OC" else 1) # Full rack estimate
-        html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div>'
-        html += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
-    html += '</div>'
+        best_indiv_total = max(best_indiv_total, q)
+        indiv_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div>'
+        indiv_block += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+    indiv_block += '</div>'
 
-    # Carton Calculation
-    carton_totals = {}
+    # 3. Carton Calculations Block (Only if data exists)
+    cart_block = ""
+    best_cart_total = 0
     if cl and cw and ch and cq:
-        html += '<div class="res-block carton-res"><strong>📦 Carton Storage (Total Units):</strong>'
+        cart_block = '<div class="res-block carton-res"><strong>📊 Carton Storage (Units):</strong>'
         for zk in ["SH", "OC", "CL"]:
             q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
-            total_units = q_boxes * cq
-            carton_totals[zk] = total_units * (6 if zk=="SH" else 2 if zk=="OC" else 1)
-            html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_units)} total</span></div>'
-            html += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
-        html += '</div>'
-        
-        # Win Comparison
-        best_i = sum(indiv_totals.values())
-        best_c = sum(carton_totals.values())
-        win = "Individual" if best_i > best_c else "Carton"
-        html += f'<div class="comparison-box">✨ {win} storage maximizes this rack.</div>'
+            total_items = q_boxes * cq
+            best_cart_total = max(best_cart_total, total_items)
+            cart_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div>'
+            cart_block += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
+        cart_block += '</div>'
 
-    window.copyText = f"Optimizer Result: Individual: {indiv_totals} | Carton: {carton_totals if cl else 'N/A'}"
+    # 4. Final Comparison
+    compare_block = ""
+    if cl:
+        win = "Individual" if best_indiv_total >= best_cart_total else "Carton"
+        diff = abs(best_indiv_total - best_cart_total)
+        compare_block = f'<div class="comparison-box">✨ {win} storage is the winner ({int(diff)} unit difference)</div>'
+
+    out.innerHTML = f'<div class="res-container">{indiv_block}{cart_block}</div>{compare_block}'
+    window.copyText = f"Optimizer: Best Individual={best_indiv_total}, Best Carton={best_cart_total}"
     document.querySelector("#copy-btn").style.display = "block"
-    out.innerHTML = html
     </script>
 </body>
 </html>
