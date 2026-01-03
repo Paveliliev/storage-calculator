@@ -15,13 +15,11 @@
         .card { background: var(--card); padding: 15px 30px 30px 30px; border-radius: 15px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 100%; max-width: 480px; box-sizing: border-box; align-self: center; }
         h1 { color: var(--text); margin-bottom: 15px; text-align: center; font-size: 1.4rem; font-weight: 600; }
         
-        /* Top Navigation */
         .top-nav { position: fixed; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 50; }
-        .nav-btn { padding: 10px; background: #333; color: white; border-radius: 8px; border: 1px solid #444; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .nav-btn { padding: 10px; background: #333; color: white; border-radius: 8px; border: 1px solid #444; font-size: 0.9rem; cursor: pointer; }
         
-        /* Settings Overlay */
         .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
-        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border); }
+        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); }
         
         .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -29,14 +27,15 @@
         
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
         button { cursor: pointer; font-weight: bold; border-radius: 8px; border: none; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
         
         #calc-btn { flex: 3; padding: 12px; background-color: #007bff; color: white; }
         #copy-btn { padding: 12px; background-color: #28a745; color: white; margin-top: 15px; width: 100%; display: none; }
         #reset-btn { flex: 1; padding: 12px; background-color: var(--secondary-bg); color: var(--text); border: 1px solid var(--border); }
         
-        .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
+        .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
+        .carton-res { border-left-color: #e67e22; }
         .alert-block { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; }
+        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.85em; text-align: center; font-weight: bold; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
         .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;}
         .bar-fill { height: 100%; transition: width 0.5s ease-out; }
@@ -64,9 +63,9 @@
     <div class="card">
         <h1>Storage Optimizer</h1>
         <div>
-            <label class="input-label">Each Dimensions (L/W/H/kg):</label>
+            <label class="input-label">Each (L/W/H/kg):</label>
             <div class="grid-3"><input type="number" id="L" placeholder="L"><input type="number" id="W" placeholder="W"><input type="number" id="H" placeholder="H"></div>
-            <input type="number" id="Weight" placeholder="Each weight (kg)" style="margin-top:8px;">
+            <input type="number" id="Weight" placeholder="Each kg" style="margin-top:8px;">
         </div>
 
         <div style="background: var(--secondary-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-top: 15px;">
@@ -88,22 +87,14 @@
     <script>
         const fields = ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"];
         const factory = { "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36 };
-        let copyText = "";
-        let clickCount = 0;
-        let lastClick = 0;
+        let copyText = ""; let clickCount = 0; let lastClick = 0;
 
         function handleThemeClick() {
             const now = Date.now();
             if (now - lastClick < 900) clickCount++; else clickCount = 1;
             lastClick = now;
-
-            if (clickCount >= 5) {
-                document.body.classList.toggle('matrix-mode');
-                clickCount = 0;
-            } else {
-                document.body.classList.remove('matrix-mode');
-                document.body.classList.toggle('dark-mode');
-            }
+            if (clickCount >= 5) { document.body.classList.toggle('matrix-mode'); clickCount = 0; } 
+            else { document.body.classList.remove('matrix-mode'); document.body.classList.toggle('dark-mode'); }
         }
 
         function saveAndClose() {
@@ -113,10 +104,7 @@
 
         function resetToFactory() {
             if(confirm("Restore original zone limits?")) {
-                fields.forEach(id => { 
-                    document.getElementById(id).value = factory[id]; 
-                    localStorage.setItem(id, factory[id]); 
-                });
+                fields.forEach(id => { document.getElementById(id).value = factory[id]; localStorage.setItem(id, factory[id]); });
                 document.getElementById('settings-modal').style.display='none';
             }
         }
@@ -130,9 +118,7 @@
         }
 
         window.onload = () => {
-            fields.forEach(id => {
-                if(localStorage.getItem(id)) document.getElementById(id).value = localStorage.getItem(id);
-            });
+            fields.forEach(id => { if(localStorage.getItem(id)) document.getElementById(id).value = localStorage.getItem(id); });
         };
     </script>
 
@@ -176,20 +162,41 @@ def calc(event):
     if not (l and w and h): return
 
     html = ""
+    # Validity Check
     if cl and cw and ch and cq:
         ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*w*h) > 0 else 0
         if ratio < 70 or ratio > 130:
-            html += f'<div class="alert-block">⚠️ <b>Dimension Check:</b> Carton volume is {int(ratio)}% of unit volume.</div>'
+            html += f'<div class="alert-block">⚠️ <b>Dimension Mismatch:</b> Carton volume is {int(ratio)}% of the units inside. Check entries.</div>'
 
-    res = {}
-    html += '<div class="res-block"><strong>Best Fit Results:</strong>'
+    # Individual Calculation
+    indiv_totals = {}
+    html += '<div class="res-block"><strong>📦 Individual Items:</strong>'
     for zk in ["SH", "OC", "CL"]:
         q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
-        res[zk] = q
-        html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)}</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+        indiv_totals[zk] = q * (6 if zk=="SH" else 2 if zk=="OC" else 1) # Full rack estimate
+        html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div>'
+        html += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
     html += '</div>'
 
-    window.copyText = f"SH: {int(res['SH'])} | OC: {int(res['OC'])} | CL: {int(res['CL'])}"
+    # Carton Calculation
+    carton_totals = {}
+    if cl and cw and ch and cq:
+        html += '<div class="res-block carton-res"><strong>📦 Carton Storage (Total Units):</strong>'
+        for zk in ["SH", "OC", "CL"]:
+            q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
+            total_units = q_boxes * cq
+            carton_totals[zk] = total_units * (6 if zk=="SH" else 2 if zk=="OC" else 1)
+            html += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_units)} total</span></div>'
+            html += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
+        html += '</div>'
+        
+        # Win Comparison
+        best_i = sum(indiv_totals.values())
+        best_c = sum(carton_totals.values())
+        win = "Individual" if best_i > best_c else "Carton"
+        html += f'<div class="comparison-box">✨ {win} storage maximizes this rack.</div>'
+
+    window.copyText = f"Optimizer Result: Individual: {indiv_totals} | Carton: {carton_totals if cl else 'N/A'}"
     document.querySelector("#copy-btn").style.display = "block"
     out.innerHTML = html
     </script>
