@@ -18,7 +18,6 @@
         .top-nav { position: fixed; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 50; }
         .nav-btn { padding: 10px; background: #333; color: white; border-radius: 8px; border: 1px solid #444; font-size: 0.9rem; cursor: pointer; }
         
-        /* Settings Overlay - Clickable Backdrop */
         .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; cursor: pointer; }
         .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); cursor: default; }
         
@@ -111,12 +110,43 @@
             }
         }
 
+        // IMPROVED COPY LOGIC
         function copyResults() {
-            navigator.clipboard.writeText(copyText).then(() => {
-                const btn = document.getElementById('copy-btn');
-                btn.innerText = "✅ Copied!";
-                setTimeout(() => btn.innerText = "📋 Copy Results", 2000);
-            });
+            const textToCopy = window.copyText || "No results to copy";
+            
+            // Try standard way first
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    updateButton();
+                }).catch(err => fallbackCopy(textToCopy));
+            } else {
+                fallbackCopy(textToCopy);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; 
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                updateButton();
+            } catch (err) {
+                alert('Manual copy needed: ' + text);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function updateButton() {
+            const btn = document.getElementById('copy-btn');
+            const oldText = btn.innerText;
+            btn.innerText = "✅ Results Copied!";
+            setTimeout(() => btn.innerText = oldText, 2500);
         }
 
         window.onload = () => {
@@ -141,73 +171,59 @@ def reset_inputs(event):
 def calc_best_fit(l, w, h, weight, zone_key, z_dims):
     z = z_dims[zone_key]
     weight_limits = {"SH": 50, "OC": 40, "CL": 80}
-    
     qty1 = (math.floor(z['l']/l) * math.floor(z['w']/w))
     qty2 = (math.floor(z['l']/w) * math.floor(z['w']/l))
     footprint = max(qty1, qty2)
     layers = math.floor(z['h']/h)
     qty = footprint * layers
-    
     if zone_key == "OC": qty *= 2
     if weight > 0:
         mw = math.floor(weight_limits[zone_key] / weight)
         if mw < qty: qty = mw
-    
-    # Efficiency Formula: $$\frac{(l \times w \times h) \times qty}{Volume_{Zone}} \times 100$$
     eff = (((l*w*h) * qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
     return max(0, qty), eff
 
 def calc(event):
     out = document.querySelector("#output-area")
     z_dims = {"SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")}, "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")}, "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}}
-    
     l, w, h, wt = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwt, cq = get_f("CL_c"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
-    
     if not (l and w and h): return
 
     html_content = ""
+    copy_str = f"Storage Optimization Summary\nEach Dims: {l}x{w}x{h} ({wt}kg)\n"
     
-    # 1. Validation Alert
     if cl and cw and ch and cq:
-        unit_vol = l * w * h
-        cart_vol_per_item = (cl * cw * ch) / cq
-        ratio = (cart_vol_per_item / unit_vol) * 100 if unit_vol > 0 else 0
+        ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*w*h) > 0 else 0
         if ratio < 70 or ratio > 130:
-            html_content += f'<div class="alert-block">⚠️ <b>Volume Check:</b> Carton is {int(ratio)}% of the unit volume. Possible error in dims or qty.</div>'
+            html_content += f'<div class="alert-block">⚠️ <b>Volume Check:</b> Carton is {int(ratio)}% of unit volume.</div>'
 
-    # 2. Individual Calculations Block
+    # Individual
     indiv_block = '<div class="res-block"><strong>📊 Individual Items:</strong>'
-    best_indiv_total = 0
+    indiv_data = []
     for zk in ["SH", "OC", "CL"]:
         q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
-        best_indiv_total = max(best_indiv_total, q)
-        indiv_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div>'
-        indiv_block += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+        indiv_data.append((zk, q))
+        indiv_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
     indiv_block += '</div>'
+    copy_str += f"Individual Storage: SH:{int(indiv_data[0][1])}, OC:{int(indiv_data[1][1])}, CL:{int(indiv_data[2][1])}\n"
 
-    # 3. Carton Calculations Block (Only if data exists)
+    # Carton
     cart_block = ""
-    best_cart_total = 0
     if cl and cw and ch and cq:
-        cart_block = '<div class="res-block carton-res"><strong>📊 Carton Storage (Units):</strong>'
+        cart_block = '<div class="res-block carton-res"><strong>📊 Carton Storage (Total Units):</strong>'
+        cart_data = []
         for zk in ["SH", "OC", "CL"]:
             q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
             total_items = q_boxes * cq
-            best_cart_total = max(best_cart_total, total_items)
-            cart_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div>'
-            cart_block += f'<div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
+            cart_data.append((zk, total_items))
+            cart_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
         cart_block += '</div>'
+        copy_str += f"Carton Configuration: {cl}x{cw}x{ch} Qty:{cq}\n"
+        copy_str += f"Total Units via Carton: SH:{int(cart_data[0][1])}, OC:{int(cart_data[1][1])}, CL:{int(cart_data[2][1])}\n"
 
-    # 4. Final Comparison
-    compare_block = ""
-    if cl:
-        win = "Individual" if best_indiv_total >= best_cart_total else "Carton"
-        diff = abs(best_indiv_total - best_cart_total)
-        compare_block = f'<div class="comparison-box">✨ {win} storage is the winner ({int(diff)} unit difference)</div>'
-
-    out.innerHTML = f'<div class="res-container">{indiv_block}{cart_block}</div>{compare_block}'
-    window.copyText = f"Optimizer: Best Individual={best_indiv_total}, Best Carton={best_cart_total}"
+    out.innerHTML = f'<div class="res-container">{indiv_block}{cart_block}</div>'
+    window.copyText = copy_str
     document.querySelector("#copy-btn").style.display = "block"
     </script>
 </body>
