@@ -19,7 +19,7 @@
         .nav-btn { padding: 10px; background: #333; color: white; border-radius: 8px; border: 1px solid #444; font-size: 0.9rem; cursor: pointer; }
         
         .settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; cursor: pointer; }
-        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); cursor: default; }
+        .settings-menu { position: absolute; top: 20px; left: 20px; background: var(--card); color: var(--text); padding: 20px; border-radius: 10px; width: 310px; border: 1px solid var(--border); cursor: default; max-height: 90vh; overflow-y: auto; }
         
         .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -36,7 +36,6 @@
         .res-block { background: var(--secondary-bg); padding: 12px; border-radius: 8px; border-left: 4px solid #007bff; font-size: 0.85em; line-height: 1.6; }
         .carton-res { border-left-color: #e67e22; }
         .alert-block { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; }
-        .comparison-box { margin-top: 10px; padding: 12px; border-radius: 8px; border: 1px solid #9b59b6; color: #9b59b6; background: rgba(155, 89, 182, 0.1); font-size: 0.9em; text-align: center; font-weight: bold; }
         .bar-label { font-size: 0.75em; display: flex; justify-content: space-between; margin-bottom: 2px; }
         .bar-bg { background: rgba(128,128,128,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;}
         .bar-fill { height: 100%; transition: width 0.5s ease-out; }
@@ -52,17 +51,19 @@
     <div id="settings-modal" class="settings-overlay" onclick="saveAndClose()">
         <div class="settings-menu" onclick="event.stopPropagation()">
             <button onclick="saveAndClose()" style="width:100%; padding:12px; background:#28a745; color:white; border-radius:5px; margin-bottom:15px;">✅ Save & Close</button>
-            <h3>Zone Limits</h3>
+            <h3>Zone & Pallet Limits</h3>
             <div style="margin-bottom:10px;"><label>SH (Shelving)</label><div class="grid-3"><input type="number" id="SH_L" value="55"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
             <div style="margin-bottom:10px;"><label>OC (Conveyor)</label><div class="grid-3"><input type="number" id="OC_L" value="51.5"><input type="number" id="OC_W" value="33.5"><input type="number" id="OC_H" value="34"></div></div>
-            <div style="margin-bottom:20px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
+            <div style="margin-bottom:10px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
+            <div style="margin-bottom:10px;"><label>4W (4-Way UK Pallet - 1.8m High)</label><div class="grid-3"><input type="number" id="4W_L" value="120"><input type="number" id="4W_W" value="100"><input type="number" id="4W_H" value="167"></div></div>
+            <div style="margin-bottom:20px;"><label>EP (Euro Pallet - 1.8m High)</label><div class="grid-3"><input type="number" id="EP_L" value="120"><input type="number" id="EP_W" value="80"><input type="number" id="EP_H" value="167"></div></div>
             <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
             <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">⚠️ Reset Factory</button>
         </div>
     </div>
 
     <div class="card">
-        <h1>Storage Optimizer</h1>
+        <h1>Storage Optimizer Pro</h1>
         <div>
             <label class="input-label">Each (L/W/H/kg):</label>
             <div class="grid-3"><input type="number" id="L" placeholder="L"><input type="number" id="W" placeholder="W"><input type="number" id="H" placeholder="H"></div>
@@ -86,9 +87,9 @@
     </div>
 
     <script>
-        const fields = ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H"];
-        const factory = { "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36 };
-        let copyText = ""; let clickCount = 0; let lastClick = 0;
+        const fields = ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H", "4W_L", "4W_W", "4W_H", "EP_L", "EP_W", "EP_H"];
+        const factory = { "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36, "4W_L":120, "4W_W":100, "4W_H":167, "EP_L":120, "EP_W":80, "EP_H":167 };
+        let clickCount = 0; let lastClick = 0;
 
         function handleThemeClick() {
             const now = Date.now();
@@ -110,15 +111,10 @@
             }
         }
 
-        // IMPROVED COPY LOGIC
         function copyResults() {
             const textToCopy = window.copyText || "No results to copy";
-            
-            // Try standard way first
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    updateButton();
-                }).catch(err => fallbackCopy(textToCopy));
+                navigator.clipboard.writeText(textToCopy).then(() => updateButton());
             } else {
                 fallbackCopy(textToCopy);
             }
@@ -127,18 +123,10 @@
         function fallbackCopy(text) {
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            textArea.style.position = "fixed"; 
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
+            textArea.style.position = "fixed"; textArea.style.left = "-9999px";
             document.body.appendChild(textArea);
-            textArea.focus();
             textArea.select();
-            try {
-                document.execCommand('copy');
-                updateButton();
-            } catch (err) {
-                alert('Manual copy needed: ' + text);
-            }
+            try { document.execCommand('copy'); updateButton(); } catch (err) {}
             document.body.removeChild(textArea);
         }
 
@@ -170,22 +158,28 @@ def reset_inputs(event):
 
 def calc_best_fit(l, w, h, weight, zone_key, z_dims):
     z = z_dims[zone_key]
-    weight_limits = {"SH": 50, "OC": 40, "CL": 80}
+    weight_limits = {"SH": 50, "OC": 40, "CL": 80, "4W": 1000, "EP": 1000}
+    
     qty1 = (math.floor(z['l']/l) * math.floor(z['w']/w))
     qty2 = (math.floor(z['l']/w) * math.floor(z['w']/l))
     footprint = max(qty1, qty2)
     layers = math.floor(z['h']/h)
     qty = footprint * layers
+    
     if zone_key == "OC": qty *= 2
+    
     if weight > 0:
         mw = math.floor(weight_limits[zone_key] / weight)
         if mw < qty: qty = mw
+    
     eff = (((l*w*h) * qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
     return max(0, qty), eff
 
 def calc(event):
     out = document.querySelector("#output-area")
-    z_dims = {"SH": {"l": get_f("SH_L"), "w": get_f("SH_W"), "h": get_f("SH_H")}, "OC": {"l": get_f("OC_L"), "w": get_f("OC_W"), "h": get_f("OC_H")}, "CL": {"l": get_f("CL_L"), "w": get_f("CL_W"), "h": get_f("CL_H")}}
+    z_keys = ["SH", "OC", "CL", "4W", "EP"]
+    z_dims = {zk: {"l": get_f(f"{zk}_L"), "w": get_f(f"{zk}_W"), "h": get_f(f"{zk}_H")} for zk in z_keys}
+    
     l, w, h, wt = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwt, cq = get_f("CL_c"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
     if not (l and w and h): return
@@ -194,35 +188,33 @@ def calc(event):
     copy_str = f"Storage Optimization Summary\nEach Dims: {l}x{w}x{h} ({wt}kg)\n"
     
     if cl and cw and ch and cq:
-        ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*w*h) > 0 else 0
+        ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*h) > 0 else 0
         if ratio < 70 or ratio > 130:
             html_content += f'<div class="alert-block">⚠️ <b>Volume Check:</b> Carton is {int(ratio)}% of unit volume.</div>'
 
-    # Individual
+    # Individual Items
     indiv_block = '<div class="res-block"><strong>📊 Individual Items:</strong>'
-    indiv_data = []
-    for zk in ["SH", "OC", "CL"]:
+    for zk in z_keys:
         q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
-        indiv_data.append((zk, q))
-        indiv_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(q)} units</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+        label = zk if zk not in ["4W", "EP"] else f"Pallet ({zk})"
+        indiv_block += f'<div class="bar-label"><span>{label} ({int(e)}% Density)</span><span>{int(q)} units</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
+        copy_str += f"{label}: {int(q)} units\n"
     indiv_block += '</div>'
-    copy_str += f"Individual Storage: SH:{int(indiv_data[0][1])}, OC:{int(indiv_data[1][1])}, CL:{int(indiv_data[2][1])}\n"
 
-    # Carton
+    # Carton Storage
     cart_block = ""
     if cl and cw and ch and cq:
         cart_block = '<div class="res-block carton-res"><strong>📊 Carton Storage (Total Units):</strong>'
-        cart_data = []
-        for zk in ["SH", "OC", "CL"]:
+        copy_str += f"\nCarton Config: {cl}x{cw}x{ch} Qty:{cq}\n"
+        for zk in z_keys:
             q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
             total_items = q_boxes * cq
-            cart_data.append((zk, total_items))
-            cart_block += f'<div class="bar-label"><span>{zk} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
+            label = zk if zk not in ["4W", "EP"] else f"Pallet ({zk})"
+            cart_block += f'<div class="bar-label"><span>{label} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
+            copy_str += f"Carton {label}: {int(total_items)} units\n"
         cart_block += '</div>'
-        copy_str += f"Carton Configuration: {cl}x{cw}x{ch} Qty:{cq}\n"
-        copy_str += f"Total Units via Carton: SH:{int(cart_data[0][1])}, OC:{int(cart_data[1][1])}, CL:{int(cart_data[2][1])}\n"
 
-    out.innerHTML = f'<div class="res-container">{indiv_block}{cart_block}</div>'
+    out.innerHTML = f'{html_content}<div class="res-container">{indiv_block}{cart_block}</div>'
     window.copyText = copy_str
     document.querySelector("#copy-btn").style.display = "block"
     </script>
