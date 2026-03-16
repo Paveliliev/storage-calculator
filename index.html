@@ -23,6 +23,7 @@
         
         .input-label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--input-text); box-sizing: border-box; outline: none; }
         
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
@@ -51,12 +52,21 @@
     <div id="settings-modal" class="settings-overlay" onclick="saveAndClose()">
         <div class="settings-menu" onclick="event.stopPropagation()">
             <button onclick="saveAndClose()" style="width:100%; padding:12px; background:#28a745; color:white; border-radius:5px; margin-bottom:15px;">✅ Save & Close</button>
+            
+            <h3>Target Buffer Zones (%)</h3>
+            <div class="grid-2" style="margin-bottom:15px;">
+                <div><label class="input-label">Each Buffer %</label><input type="number" id="BUF_E" value="80"></div>
+                <div><label class="input-label">Carton Buffer %</label><input type="number" id="BUF_C" value="100"></div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
             <h3>Zone & Pallet Limits</h3>
             <div style="margin-bottom:10px;"><label>SH (Shelving)</label><div class="grid-3"><input type="number" id="SH_L" value="55"><input type="number" id="SH_W" value="32"><input type="number" id="SH_H" value="30"></div></div>
             <div style="margin-bottom:10px;"><label>OC (Conveyor)</label><div class="grid-3"><input type="number" id="OC_L" value="51.5"><input type="number" id="OC_W" value="33.5"><input type="number" id="OC_H" value="34"></div></div>
             <div style="margin-bottom:10px;"><label>CL (Carton Live)</label><div class="grid-3"><input type="number" id="CL_L" value="238"><input type="number" id="CL_W" value="41.5"><input type="number" id="CL_H" value="36"></div></div>
-            <div style="margin-bottom:10px;"><label>UK4W (4-Way UK Pallet - 1.8m High)</label><div class="grid-3"><input type="number" id="UK4W_L" value="120"><input type="number" id="UK4W_W" value="100"><input type="number" id="UK4W_H" value="167"></div></div>
-            <div style="margin-bottom:20px;"><label>EURO (Euro Pallet - 1.8m High)</label><div class="grid-3"><input type="number" id="EURO_L" value="120"><input type="number" id="EURO_W" value="80"><input type="number" id="EURO_H" value="167"></div></div>
+            <div style="margin-bottom:10px;"><label>UK4W (4-Way Pallet - 1.8m)</label><div class="grid-3"><input type="number" id="UK4W_L" value="120"><input type="number" id="UK4W_W" value="100"><input type="number" id="UK4W_H" value="167"></div></div>
+            <div style="margin-bottom:20px;"><label>EURO (Euro Pallet - 1.8m)</label><div class="grid-3"><input type="number" id="EURO_L" value="120"><input type="number" id="EURO_W" value="80"><input type="number" id="EURO_H" value="167"></div></div>
+            
             <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
             <button onclick="resetToFactory()" style="width:100%; padding:10px; background:#dc3545; color:white; border-radius:5px;">⚠️ Reset Factory</button>
         </div>
@@ -87,8 +97,8 @@
     </div>
 
     <script>
-        const fields = ["SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H", "UK4W_L", "UK4W_W", "UK4W_H", "EURO_L", "EURO_W", "EURO_H"];
-        const factory = { "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36, "UK4W_L":120, "UK4W_W":100, "UK4W_H":167, "EURO_L":120, "EURO_W":80, "EURO_H":167 };
+        const fields = ["BUF_E", "BUF_C", "SH_L", "SH_W", "SH_H", "OC_L", "OC_W", "OC_H", "CL_L", "CL_W", "CL_H", "UK4W_L", "UK4W_W", "UK4W_H", "EURO_L", "EURO_W", "EURO_H"];
+        const factory = { "BUF_E":80, "BUF_C":100, "SH_L":55, "SH_W":32, "SH_H":30, "OC_L":51.5, "OC_W":33.5, "OC_H":34, "CL_L":238, "CL_W":41.5, "CL_H":36, "UK4W_L":120, "UK4W_W":100, "UK4W_H":167, "EURO_L":120, "EURO_W":80, "EURO_H":167 };
         let clickCount = 0; let lastClick = 0;
 
         function handleThemeClick() {
@@ -156,24 +166,27 @@ def reset_inputs(event):
     document.querySelector("#output-area").innerHTML = ""
     document.querySelector("#copy-btn").style.display = "none"
 
-def calc_best_fit(l, w, h, weight, zone_key, z_dims):
+def calc_best_fit(l, w, h, weight, zone_key, z_dims, buffer_pct):
     z = z_dims[zone_key]
-    # Realistic pallet weight limits (1 Tonne)
     weight_limits = {"SH": 50, "OC": 40, "CL": 80, "UK4W": 1000, "EURO": 1000}
     
+    # Calculate physical max
     qty1 = (math.floor(z['l']/l) * math.floor(z['w']/w))
     qty2 = (math.floor(z['l']/w) * math.floor(z['w']/l))
     footprint = max(qty1, qty2)
     layers = math.floor(z['h']/h)
-    qty = footprint * layers
+    physical_max = footprint * layers
+    
+    # Apply Buffer % (Rounded down)
+    qty = math.floor(physical_max * (buffer_pct / 100))
     
     if zone_key == "OC": qty *= 2
     
+    # Check Weight Constraints
     if weight > 0:
         mw = math.floor(weight_limits[zone_key] / weight)
         if mw < qty: qty = mw
     
-    # Logic handles 2x multi-pick for OC zone
     eff = (((l*w*h) * qty) / (z['l']*z['w']*z['h']*(2 if zone_key=="OC" else 1)) * 100) if qty > 0 else 0
     return max(0, qty), eff
 
@@ -182,12 +195,13 @@ def calc(event):
     z_keys = ["SH", "OC", "CL", "UK4W", "EURO"]
     z_dims = {zk: {"l": get_f(f"{zk}_L"), "w": get_f(f"{zk}_W"), "h": get_f(f"{zk}_H")} for zk in z_keys}
     
+    buf_e, buf_c = get_f("BUF_E"), get_f("BUF_C")
     l, w, h, wt = get_f("L"), get_f("W"), get_f("H"), get_f("Weight")
     cl, cw, ch, cwt, cq = get_f("CL_c"), get_f("CW"), get_f("CH"), get_f("CWE"), get_f("CQ")
     if not (l and w and h): return
 
     html_content = ""
-    copy_str = f"Storage Optimization Summary\nEach Dims: {l}x{w}x{h} ({wt}kg)\n"
+    copy_str = f"Storage Optimization Summary\nBuffers: Each {int(buf_e)}%, Carton {int(buf_c)}%\nEach Dims: {l}x{w}x{h} ({wt}kg)\n"
     
     if cl and cw and ch and cq:
         ratio = (((cl * cw * ch) / cq) / (l * w * h)) * 100 if (l*h) > 0 else 0
@@ -197,7 +211,7 @@ def calc(event):
     # Individual Items
     indiv_block = '<div class="res-block"><strong>📊 Individual Items:</strong>'
     for zk in z_keys:
-        q, e = calc_best_fit(l, w, h, wt, zk, z_dims)
+        q, e = calc_best_fit(l, w, h, wt, zk, z_dims, buf_e)
         label = zk if zk not in ["UK4W", "EURO"] else f"Pallet ({zk})"
         indiv_block += f'<div class="bar-label"><span>{label} ({int(e)}% Density)</span><span>{int(q)} units</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#007bff;"></div></div>'
         copy_str += f"{label}: {int(q)} units\n"
@@ -209,7 +223,7 @@ def calc(event):
         cart_block = '<div class="res-block carton-res"><strong>📊 Carton Storage (Total Units):</strong>'
         copy_str += f"\nCarton Config: {cl}x{cw}x{ch} Qty:{cq}\n"
         for zk in z_keys:
-            q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims)
+            q_boxes, e = calc_best_fit(cl, cw, ch, cwt, zk, z_dims, buf_c)
             total_items = q_boxes * cq
             label = zk if zk not in ["UK4W", "EURO"] else f"Pallet ({zk})"
             cart_block += f'<div class="bar-label"><span>{label} ({int(e)}% Density)</span><span>{int(total_items)} items</span></div><div class="bar-bg"><div class="bar-fill" style="width:{e}%; background:#e67e22;"></div></div>'
