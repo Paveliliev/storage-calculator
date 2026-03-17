@@ -1,7 +1,6 @@
 {
   "name": "Storage-Optimizer",
-  "description": "Python logic for warehouse spatial optimization",
   "files": {
-    "./logic.py": "./logic.py"
+    "logic.py": "logic.py"
   }
 }
